@@ -1,20 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
 using UserManagementAPI.Models;
 using UserManagementAPI.Services;
-using UserManagementAPI.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace UserManagementAPI.Models
 {
     public class User
     {
         public int Id { get; set; }
+
+        [Required, MinLength(2)]
         public string FirstName { get; set; } = string.Empty;
+
+        [Required, MinLength(2)]
         public string LastName { get; set; } = string.Empty;
+
+        [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
+
+        [Required]
         public string Department { get; set; } = string.Empty;
     }
 }
-
 
 namespace UserManagementAPI.Services
 {
@@ -29,6 +36,9 @@ namespace UserManagementAPI.Services
 
         public User Create(User user)
         {
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
+
             user.Id = _nextId++;
             _users.Add(user);
             return user;
@@ -36,8 +46,12 @@ namespace UserManagementAPI.Services
 
         public bool Update(int id, User updatedUser)
         {
+            if (updatedUser == null)
+                return false;
+
             var existing = Get(id);
-            if (existing == null) return false;
+            if (existing == null)
+                return false;
 
             existing.FirstName = updatedUser.FirstName;
             existing.LastName = updatedUser.LastName;
@@ -50,7 +64,8 @@ namespace UserManagementAPI.Services
         public bool Delete(int id)
         {
             var user = Get(id);
-            if (user == null) return false;
+            if (user == null)
+                return false;
 
             _users.Remove(user);
             return true;
@@ -72,37 +87,82 @@ namespace UserManagementAPI.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
+        public IActionResult GetAll()
+        {
+            try
+            {
+                return Ok(_service.GetAll());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
 
         [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
-            var user = _service.Get(id);
-            return user == null ? NotFound() : Ok(user);
+            try
+            {
+                var user = _service.Get(id);
+                return user == null ? NotFound() : Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpPost]
-        public IActionResult Create(User user)
+        public IActionResult Create([FromBody] User user)
         {
-            var created = _service.Create(user);
-            return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var created = _service.Create(user);
+                return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update(int id, User user)
+        public IActionResult Update(int id, [FromBody] User user)
         {
-            var success = _service.Update(id, user);
-            return success ? NoContent() : NotFound();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var success = _service.Update(id, user);
+                return success ? NoContent() : NotFound();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var success = _service.Delete(id);
-            return success ? NoContent() : NotFound();
+            try
+            {
+                var success = _service.Delete(id);
+                return success ? NoContent() : NotFound();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }
+
 
 // builder.Services.AddEndpointsApiExplorer();
 // builder.Services.AddSwaggerGen();
