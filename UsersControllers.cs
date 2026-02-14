@@ -8,60 +8,51 @@ namespace UserManagementAPI.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-        private readonly UserService _service;
+        private readonly IUserService _service;
 
-        public UsersController(UserService service)
+        public UsersController(IUserService service)
         {
             _service = service;
         }
 
         // GET: api/users
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var users = _service.GetAll();
+            var users = await _service.GetAllAsync();
             return Ok(users);
         }
 
         // GET: api/users/{id}
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetById(int id)
         {
-            var user = _service.GetById(id);
-            if (user == null)
-                return NotFound();
-
-            return Ok(user);
+            var user = await _service.GetByIdAsync(id);
+            return user is null ? NotFound() : Ok(user);
         }
 
         // POST: api/users
         [HttpPost]
-        public IActionResult Create(User user)
+        public async Task<IActionResult> Create([FromBody] User user)
         {
-            var createdUser = _service.Create(user);
+            var createdUser = await _service.CreateAsync(user);
             return CreatedAtAction(nameof(GetById), new { id = createdUser.Id }, createdUser);
         }
 
         // PUT: api/users/{id}
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, User user)
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] User user)
         {
-            var updated = _service.Update(id, user);
-            if (!updated)
-                return NotFound();
-
-            return NoContent();
+            var updated = await _service.UpdateAsync(id, user);
+            return updated ? NoContent() : NotFound();
         }
 
         // DELETE: api/users/{id}
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
         {
-            var deleted = _service.Delete(id);
-            if (!deleted)
-                return NotFound();
-
-            return NoContent();
+            var deleted = await _service.DeleteAsync(id);
+            return deleted ? NoContent() : NotFound();
         }
     }
 }
